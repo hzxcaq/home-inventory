@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Breadcrumb from '../components/Breadcrumb';
+import Modal from '../components/Modal';
 import './ItemPage.css';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -13,6 +14,8 @@ export default function ItemPage() {
   const [items, setItems] = useState([]);
   const [storageLocations, setStorageLocations] = useState([]);
   const [room, setRoom] = useState(null);
+  const [allAddresses, setAllAddresses] = useState([]);
+  const [allRooms, setAllRooms] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -23,17 +26,36 @@ export default function ItemPage() {
   const [loading, setLoading] = useState(false);
   const [itemPhotos, setItemPhotos] = useState({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newLocationData, setNewLocationData] = useState({ name: '', type: '' });
+  const [addingLocation, setAddingLocation] = useState(false);
 
   useEffect(() => {
     fetchRoom();
     fetchStorageLocations();
     fetchItems();
+    fetchAllAddresses();
   }, [roomId]);
+
+  const fetchAllAddresses = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/addresses`);
+      setAllAddresses(response.data);
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    }
+  };
 
   const fetchRoom = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/rooms/${roomId}`);
       setRoom(response.data);
+
+      // Fetch all rooms for the same address
+      if (response.data.address?.id) {
+        const roomsResponse = await axios.get(`${API_BASE_URL}/rooms/address/${response.data.address.id}`);
+        setAllRooms(roomsResponse.data);
+      }
     } catch (error) {
       console.error('Error fetching room:', error);
     }
@@ -181,14 +203,63 @@ export default function ItemPage() {
     }
   };
 
+  const handleQuickAddLocation = async (e) => {
+    e.preventDefault();
+    if (!newLocationData.name) {
+      alert(t('pleaseEnter') + ' ' + t('locationName'));
+      return;
+    }
+
+    setAddingLocation(true);
+    try {
+      const response = await axios.post(`${API_BASE_URL}/storage-locations`, {
+        ...newLocationData,
+        room: { id: roomId },
+      });
+
+      // Refresh storage locations list
+      await fetchStorageLocations();
+
+      // Set the newly created location as selected
+      setFormData((prev) => ({ ...prev, storageLocationId: response.data.id }));
+
+      // Close modal and reset form
+      setIsModalOpen(false);
+      setNewLocationData({ name: '', type: '' });
+      alert(t('addedSuccessfully'));
+    } catch (error) {
+      console.error('Error adding location:', error);
+      alert(t('failedToAdd'));
+    } finally {
+      setAddingLocation(false);
+    }
+  };
+
   return (
     <div className="item-page">
       {room && (
         <Breadcrumb
           items={[
-            { label: t('addresses'), link: '/addresses' },
-            { label: room.address?.name || '', link: `/address/${room.address?.id}/rooms` },
-            { label: room.name, link: `/address/${room.address?.id}/rooms` },
+            {
+              label: t('addresses'),
+              link: '/addresses',
+              dropdown: allAddresses.map(addr => ({
+                id: addr.id,
+                label: addr.name,
+                path: `/address/${addr.id}/rooms`,
+                current: addr.id === room.address?.id
+              }))
+            },
+            {
+              label: room.address?.name || '',
+              link: `/address/${room.address?.id}/rooms`,
+              dropdown: allRooms.map(r => ({
+                id: r.id,
+                label: r.name,
+                path: `/room/${r.id}/items`,
+                current: r.id === parseInt(roomId)
+              }))
+            },
             { label: t('items'), link: null }
           ]}
         />
@@ -231,17 +302,26 @@ export default function ItemPage() {
 
         <div className="form-group">
           <label>{t('storageLocations')} *</label>
-          <select
-            name="storageLocationId"
-            value={formData.storageLocationId}
-            onChange={handleInputChange}
-          >
-            {storageLocations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
+          <div className="select-with-button">
+            <select
+              name="storageLocationId"
+              value={formData.storageLocationId}
+              onChange={handleInputChange}
+            >
+              {storageLocations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="btn btn-secondary btn-add-location"
+            >
+              + {t('addLocation')}
+            </button>
+          </div>
         </div>
 
         <div className="form-group">
@@ -337,6 +417,42 @@ export default function ItemPage() {
           </div>
         ))}
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setNewLocationData({ name: '', type: '' });
+        }}
+        title={t('addLocation')}
+      >
+        <form onSubmit={handleQuickAddLocation}>
+          <div className="form-group">
+            <label>{t('locationName')} *</label>
+            <input
+              type="text"
+              value={newLocationData.name}
+              onChange={(e) => setNewLocationData({ ...newLocationData, name: e.target.value })}
+              placeholder={t('locationName')}
+              autoFocus
+            />
+          </div>
+
+          <div className="form-group">
+            <label>{t('type')}</label>
+            <input
+              type="text"
+              value={newLocationData.type}
+              onChange={(e) => setNewLocationData({ ...newLocationData, type: e.target.value })}
+              placeholder={t('type')}
+            />
+          </div>
+
+          <button type="submit" disabled={addingLocation} className="btn btn-primary">
+            {addingLocation ? t('adding') : t('add')}
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 }

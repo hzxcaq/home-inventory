@@ -1,4 +1,5 @@
 {
+  "appName": "家庭物品管理",
   "home": "首页",
   "addresses": "地址",
   "rooms": "房间",
@@ -30,6 +31,7 @@
   "save": "保存",
   "cancel": "取消",
   "submit": "提交",
+  "add": "添加",
   "loading": "加载中...",
   "adding": "添加中...",
   "success": "成功",
@@ -69,5 +71,6 @@
   "step2CreateRooms": "为地址添加房间",
   "step3AddItems": "添加物品并追踪它们的位置",
   "createFirstAddress": "创建第一个地址",
-  "addNewAddress": "添加新地址"
+  "addNewAddress": "添加新地址",
+  "noRoomsYet": "暂无房间。点击「管理房间」来添加房间。"
 }

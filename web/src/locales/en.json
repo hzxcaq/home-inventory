@@ -1,4 +1,5 @@
 {
+  "appName": "Home Inventory",
   "home": "Home",
   "addresses": "Addresses",
   "rooms": "Rooms",
@@ -30,6 +31,7 @@
   "save": "Save",
   "cancel": "Cancel",
   "submit": "Submit",
+  "add": "Add",
   "loading": "Loading...",
   "adding": "Adding...",
   "success": "Success",
@@ -69,5 +71,6 @@
   "step2CreateRooms": "Add rooms to your address",
   "step3AddItems": "Add items and track their locations",
   "createFirstAddress": "Create Your First Address",
-  "addNewAddress": "Add New Address"
+  "addNewAddress": "Add New Address",
+  "noRoomsYet": "No rooms yet. Click 'Manage Rooms' to add rooms."
 }

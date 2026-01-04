@@ -12,6 +12,7 @@ export default function RoomPage() {
   const { id: addressId } = useParams();
   const [rooms, setRooms] = useState([]);
   const [address, setAddress] = useState(null);
+  const [allAddresses, setAllAddresses] = useState([]);
   const [formData, setFormData] = useState({ name: '', floorPlanData: '' });
   const [batchNames, setBatchNames] = useState('');
   const [isBatchMode, setIsBatchMode] = useState(false);
@@ -20,7 +21,17 @@ export default function RoomPage() {
   useEffect(() => {
     fetchAddress();
     fetchRooms();
+    fetchAllAddresses();
   }, [addressId]);
+
+  const fetchAllAddresses = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/addresses`);
+      setAllAddresses(response.data);
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    }
+  };
 
   const fetchAddress = async () => {
     try {
@@ -121,7 +132,16 @@ export default function RoomPage() {
       {address && (
         <Breadcrumb
           items={[
-            { label: t('addresses'), link: '/addresses' },
+            {
+              label: t('addresses'),
+              link: '/addresses',
+              dropdown: allAddresses.map(addr => ({
+                id: addr.id,
+                label: addr.name,
+                path: `/address/${addr.id}/rooms`,
+                current: addr.id === parseInt(addressId)
+              }))
+            },
             { label: address.name, link: null }
           ]}
         />

@@ -11,7 +11,7 @@ export default function Navigation() {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
-          {t('home')}
+          {t('appName')}
         </Link>
         <ul className="nav-menu">
           <li className="nav-item">

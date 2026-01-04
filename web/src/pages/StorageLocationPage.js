@@ -12,6 +12,8 @@ export default function StorageLocationPage() {
   const { id: roomId } = useParams();
   const [locations, setLocations] = useState([]);
   const [room, setRoom] = useState(null);
+  const [allAddresses, setAllAddresses] = useState([]);
+  const [allRooms, setAllRooms] = useState([]);
   const [formData, setFormData] = useState({ name: '', type: '' });
   const [batchData, setBatchData] = useState('');
   const [isBatchMode, setIsBatchMode] = useState(false);
@@ -20,12 +22,28 @@ export default function StorageLocationPage() {
   useEffect(() => {
     fetchRoom();
     fetchLocations();
+    fetchAllAddresses();
   }, [roomId]);
+
+  const fetchAllAddresses = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/addresses`);
+      setAllAddresses(response.data);
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    }
+  };
 
   const fetchRoom = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/rooms/${roomId}`);
       setRoom(response.data);
+
+      // Fetch all rooms for the same address
+      if (response.data.address?.id) {
+        const roomsResponse = await axios.get(`${API_BASE_URL}/rooms/address/${response.data.address.id}`);
+        setAllRooms(roomsResponse.data);
+      }
     } catch (error) {
       console.error('Error fetching room:', error);
     }
@@ -125,9 +143,27 @@ export default function StorageLocationPage() {
       {room && (
         <Breadcrumb
           items={[
-            { label: t('addresses'), link: '/addresses' },
-            { label: room.address?.name || '', link: `/address/${room.address?.id}/rooms` },
-            { label: room.name, link: null }
+            {
+              label: t('addresses'),
+              link: '/addresses',
+              dropdown: allAddresses.map(addr => ({
+                id: addr.id,
+                label: addr.name,
+                path: `/address/${addr.id}/rooms`,
+                current: addr.id === room.address?.id
+              }))
+            },
+            {
+              label: room.address?.name || '',
+              link: `/address/${room.address?.id}/rooms`,
+              dropdown: allRooms.map(r => ({
+                id: r.id,
+                label: r.name,
+                path: `/room/${r.id}/storage-locations`,
+                current: r.id === parseInt(roomId)
+              }))
+            },
+            { label: t('storageLocations'), link: null }
           ]}
         />
       )}

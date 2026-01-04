@@ -18,7 +18,22 @@ export default function HomePage() {
   const fetchAddresses = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/addresses`);
-      setAddresses(response.data);
+      const addressesData = response.data;
+
+      // Fetch rooms for each address
+      const addressesWithRooms = await Promise.all(
+        addressesData.map(async (address) => {
+          try {
+            const roomsResponse = await axios.get(`${API_BASE_URL}/rooms/address/${address.id}`);
+            return { ...address, rooms: roomsResponse.data };
+          } catch (error) {
+            console.error(`Error fetching rooms for address ${address.id}:`, error);
+            return { ...address, rooms: [] };
+          }
+        })
+      );
+
+      setAddresses(addressesWithRooms);
     } catch (error) {
       console.error('Error fetching addresses:', error);
     } finally {
@@ -62,10 +77,44 @@ export default function HomePage() {
         <div className="addresses-grid">
           {addresses.map((address) => (
             <div key={address.id} className="address-card">
-              <h3>{address.name}</h3>
-              <p>{address.address}</p>
-              <Link to={`/address/${address.id}/rooms`} className="btn btn-primary">
-                {t('rooms')}
+              <div className="address-header">
+                <h3>{address.name}</h3>
+                <p className="address-detail">{address.address}</p>
+              </div>
+
+              {address.rooms && address.rooms.length > 0 ? (
+                <div className="rooms-list">
+                  <h4>{t('rooms')}</h4>
+                  <div className="room-chips">
+                    {address.rooms.slice(0, 6).map((room) => (
+                      <Link
+                        key={room.id}
+                        to={`/room/${room.id}/items`}
+                        className="room-chip"
+                      >
+                        {room.name}
+                      </Link>
+                    ))}
+                    {address.rooms.length > 6 && (
+                      <span className="room-chip more-rooms">
+                        +{address.rooms.length - 6}
+                      </span>
+                    )}
+                    <Link
+                      to={`/address/${address.id}/rooms`}
+                      className="room-chip add-room-chip"
+                      title={t('addRoom')}
+                    >
+                      +
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <p className="no-rooms">{t('noRoomsYet')}</p>
+              )}
+
+              <Link to={`/address/${address.id}/rooms`} className="btn btn-secondary btn-manage">
+                {t('manageRooms')}
               </Link>
             </div>
           ))}
