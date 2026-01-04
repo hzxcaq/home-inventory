@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import Breadcrumb from '../components/Breadcrumb';
 import './ItemPage.css';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -11,18 +12,32 @@ export default function ItemPage() {
   const { id: roomId } = useParams();
   const [items, setItems] = useState([]);
   const [storageLocations, setStorageLocations] = useState([]);
+  const [room, setRoom] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     quantity: 1,
     storageLocationId: '',
   });
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [itemPhotos, setItemPhotos] = useState({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
+    fetchRoom();
     fetchStorageLocations();
     fetchItems();
   }, [roomId]);
+
+  const fetchRoom = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/rooms/${roomId}`);
+      setRoom(response.data);
+    } catch (error) {
+      console.error('Error fetching room:', error);
+    }
+  };
 
   const fetchStorageLocations = async () => {
     try {
@@ -43,8 +58,20 @@ export default function ItemPage() {
         (item) => item.storageLocation?.room?.id === parseInt(roomId)
       );
       setItems(roomItems);
+
+      // Fetch photos for each item
+      roomItems.forEach(item => fetchItemPhotos(item.id));
     } catch (error) {
       console.error('Error fetching items:', error);
+    }
+  };
+
+  const fetchItemPhotos = async (itemId) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/item-photos/item/${itemId}`);
+      setItemPhotos(prev => ({ ...prev, [itemId]: response.data }));
+    } catch (error) {
+      console.error('Error fetching photos:', error);
     }
   };
 
@@ -62,13 +89,31 @@ export default function ItemPage() {
 
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/items`, {
+      // First create the item
+      const itemResponse = await axios.post(`${API_BASE_URL}/items`, {
         name: formData.name,
         description: formData.description,
         quantity: parseInt(formData.quantity),
         storageLocation: { id: formData.storageLocationId },
       });
+
+      const newItemId = itemResponse.data.id;
+
+      // Then upload photos if any
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const photoFormData = new FormData();
+          photoFormData.append('file', file);
+          await axios.post(`${API_BASE_URL}/item-photos/upload/${newItemId}`, photoFormData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        }
+      }
+
       setFormData({ name: '', description: '', quantity: 1, storageLocationId: formData.storageLocationId });
+      setSelectedFiles([]);
       alert(t('addedSuccessfully'));
       fetchItems();
     } catch (error) {
@@ -77,6 +122,15 @@ export default function ItemPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedFiles(files);
+  };
+
+  const removeSelectedFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleDeleteItem = async (id) => {
@@ -91,8 +145,54 @@ export default function ItemPage() {
     }
   };
 
+  const handlePhotoUpload = async (e, itemId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploadingPhoto(true);
+    try {
+      await axios.post(`${API_BASE_URL}/item-photos/upload/${itemId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      alert(t('uploadedSuccessfully'));
+      fetchItemPhotos(itemId);
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert(t('failedToUpload'));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId, itemId) => {
+    if (window.confirm(t('confirmDelete'))) {
+      try {
+        await axios.delete(`${API_BASE_URL}/item-photos/${photoId}`);
+        alert(t('deletedSuccessfully'));
+        fetchItemPhotos(itemId);
+      } catch (error) {
+        alert(t('failedToDelete'));
+      }
+    }
+  };
+
   return (
     <div className="item-page">
+      {room && (
+        <Breadcrumb
+          items={[
+            { label: t('addresses'), link: '/addresses' },
+            { label: room.address?.name || '', link: `/address/${room.address?.id}/rooms` },
+            { label: room.name, link: `/address/${room.address?.id}/rooms` },
+            { label: t('items'), link: null }
+          ]}
+        />
+      )}
       <h1>{t('items')}</h1>
 
       <form onSubmit={handleAddItem} className="item-form">
@@ -144,6 +244,40 @@ export default function ItemPage() {
           </select>
         </div>
 
+        <div className="form-group">
+          <label>{t('photos')} ({t('optional')})</label>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileSelect}
+            id="photo-input"
+            style={{ display: 'none' }}
+          />
+          <label htmlFor="photo-input" className="btn btn-secondary">
+            {t('selectFile')}
+          </label>
+          {selectedFiles.length > 0 && (
+            <div className="selected-files">
+              <p>{selectedFiles.length} {t('photos')} {t('selected')}</p>
+              <div className="file-list">
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="file-item">
+                    <span>{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedFile(index)}
+                      className="btn btn-danger btn-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <button type="submit" disabled={loading} className="btn btn-primary">
           {loading ? t('adding') : t('addItem')}
         </button>
@@ -157,6 +291,42 @@ export default function ItemPage() {
               <h3>{item.name}</h3>
               <p>{item.description}</p>
               <p className="item-quantity">{t('quantity')}: {item.quantity}</p>
+
+              <div className="item-photos">
+                <h4>{t('photos')}</h4>
+                <div className="photos-grid">
+                  {itemPhotos[item.id] && itemPhotos[item.id].length > 0 ? (
+                    itemPhotos[item.id].map((photo) => (
+                      <div key={photo.id} className="photo-item">
+                        <img
+                          src={`${API_BASE_URL.replace('/api', '')}/uploads/${photo.photoPath}`}
+                          alt={item.name}
+                        />
+                        <button
+                          onClick={() => handleDeletePhoto(photo.id, item.id)}
+                          className="btn btn-danger btn-sm"
+                        >
+                          {t('delete')}
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="no-photos">{t('noPhotos')}</p>
+                  )}
+                </div>
+                <div className="photo-upload">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handlePhotoUpload(e, item.id)}
+                    id={`photo-upload-${item.id}`}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor={`photo-upload-${item.id}`} className="btn btn-secondary">
+                    {uploadingPhoto ? t('uploading') : t('uploadPhoto')}
+                  </label>
+                </div>
+              </div>
             </div>
             <button
               onClick={() => handleDeleteItem(item.id)}

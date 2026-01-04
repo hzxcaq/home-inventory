@@ -53,5 +53,21 @@
   "itemsList": "Items",
   "format": "Format",
   "nameAndType": "Name | Type (type is optional)",
-  "onePerLine": "One per line"
+  "onePerLine": "One per line",
+  "photos": "Photos",
+  "uploadPhoto": "Upload Photo",
+  "selectFile": "Select File",
+  "uploading": "Uploading...",
+  "uploadedSuccessfully": "Uploaded successfully",
+  "failedToUpload": "Failed to upload",
+  "noPhotos": "No photos yet",
+  "selected": "selected",
+  "welcomeMessage": "Manage your home inventory easily",
+  "getStarted": "Get Started",
+  "getStartedDescription": "Welcome! Let's organize your home inventory in 3 simple steps:",
+  "step1CreateAddress": "Create an address (your home or storage location)",
+  "step2CreateRooms": "Add rooms to your address",
+  "step3AddItems": "Add items and track their locations",
+  "createFirstAddress": "Create Your First Address",
+  "addNewAddress": "Add New Address"
 }

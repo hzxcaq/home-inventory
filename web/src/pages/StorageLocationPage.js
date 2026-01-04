@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import Breadcrumb from '../components/Breadcrumb';
 import './StorageLocationPage.css';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -10,14 +11,25 @@ export default function StorageLocationPage() {
   const { t } = useTranslation();
   const { id: roomId } = useParams();
   const [locations, setLocations] = useState([]);
+  const [room, setRoom] = useState(null);
   const [formData, setFormData] = useState({ name: '', type: '' });
   const [batchData, setBatchData] = useState('');
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    fetchRoom();
     fetchLocations();
   }, [roomId]);
+
+  const fetchRoom = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/rooms/${roomId}`);
+      setRoom(response.data);
+    } catch (error) {
+      console.error('Error fetching room:', error);
+    }
+  };
 
   const fetchLocations = async () => {
     try {
@@ -110,6 +122,15 @@ export default function StorageLocationPage() {
 
   return (
     <div className="storage-page">
+      {room && (
+        <Breadcrumb
+          items={[
+            { label: t('addresses'), link: '/addresses' },
+            { label: room.address?.name || '', link: `/address/${room.address?.id}/rooms` },
+            { label: room.name, link: null }
+          ]}
+        />
+      )}
       <h1>{t('manageStorageLocations')}</h1>
 
       <div className="mode-toggle">

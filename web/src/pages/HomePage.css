@@ -8,7 +8,7 @@
   color: #333;
 }
 
-.home-page > p {
+.subtitle {
   font-size: 18px;
   color: #666;
   margin-bottom: 40px;
@@ -27,6 +27,10 @@
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
 }
 
 .address-card:hover {
@@ -46,9 +50,100 @@
   font-size: 14px;
 }
 
-.empty-state {
+.add-new-card {
+  border: 2px dashed #ddd;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  cursor: pointer;
+}
+
+.add-new-card:hover {
+  border-color: #007bff;
+  background: #f0f8ff;
+}
+
+.add-icon {
+  font-size: 48px;
+  color: #007bff;
+  margin-bottom: 10px;
+}
+
+.empty-state-guide {
+  max-width: 600px;
+  margin: 60px auto;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   text-align: center;
-  padding: 60px 20px;
-  color: #999;
+}
+
+.guide-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.empty-state-guide h2 {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.guide-description {
   font-size: 16px;
+  color: #666;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.step:hover {
+  background: #e9ecef;
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #007bff;
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 16px;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.step-text {
+  font-size: 15px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.btn-large {
+  padding: 15px 40px;
+  font-size: 18px;
+  font-weight: 600;
 }

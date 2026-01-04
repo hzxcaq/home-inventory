@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import Breadcrumb from '../components/Breadcrumb';
 import './RoomPage.css';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -10,14 +11,25 @@ export default function RoomPage() {
   const { t } = useTranslation();
   const { id: addressId } = useParams();
   const [rooms, setRooms] = useState([]);
+  const [address, setAddress] = useState(null);
   const [formData, setFormData] = useState({ name: '', floorPlanData: '' });
   const [batchNames, setBatchNames] = useState('');
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    fetchAddress();
     fetchRooms();
   }, [addressId]);
+
+  const fetchAddress = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/addresses/${addressId}`);
+      setAddress(response.data);
+    } catch (error) {
+      console.error('Error fetching address:', error);
+    }
+  };
 
   const fetchRooms = async () => {
     try {
@@ -106,6 +118,14 @@ export default function RoomPage() {
 
   return (
     <div className="room-page">
+      {address && (
+        <Breadcrumb
+          items={[
+            { label: t('addresses'), link: '/addresses' },
+            { label: address.name, link: null }
+          ]}
+        />
+      )}
       <h1>{t('manageRooms')}</h1>
 
       <div className="mode-toggle">

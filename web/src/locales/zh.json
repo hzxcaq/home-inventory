@@ -53,5 +53,21 @@
   "itemsList": "物品列表",
   "format": "格式",
   "nameAndType": "名称 | 类型（类型可选）",
-  "onePerLine": "每行一个"
+  "onePerLine": "每行一个",
+  "photos": "照片",
+  "uploadPhoto": "上传照片",
+  "selectFile": "选择文件",
+  "uploading": "上传中...",
+  "uploadedSuccessfully": "上传成功",
+  "failedToUpload": "上传失败",
+  "noPhotos": "暂无照片",
+  "selected": "已选择",
+  "welcomeMessage": "轻松管理您的家庭物品",
+  "getStarted": "开始使用",
+  "getStartedDescription": "欢迎！让我们通过3个简单步骤来整理您的家庭物品：",
+  "step1CreateAddress": "创建地址（您的家或储物地点）",
+  "step2CreateRooms": "为地址添加房间",
+  "step3AddItems": "添加物品并追踪它们的位置",
+  "createFirstAddress": "创建第一个地址",
+  "addNewAddress": "添加新地址"
 }
