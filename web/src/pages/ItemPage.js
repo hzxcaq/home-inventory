@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Breadcrumb from '../components/Breadcrumb';
 import Modal from '../components/Modal';
+import Toast from '../components/Toast';
+import Confirm from '../components/Confirm';
 import './ItemPage.css';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -26,9 +28,15 @@ export default function ItemPage() {
   const [loading, setLoading] = useState(false);
   const [itemPhotos, setItemPhotos] = useState({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newLocationData, setNewLocationData] = useState({ name: '', type: '' });
   const [addingLocation, setAddingLocation] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({ name: '', description: '', quantity: 1, storageLocationId: '' });
+  const [toast, setToast] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
 
   useEffect(() => {
     fetchRoom();
@@ -105,7 +113,7 @@ export default function ItemPage() {
   const handleAddItem = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.storageLocationId) {
-      alert(t('pleaseEnter') + ' ' + t('itemName'));
+      setToast({ message: t('pleaseEnter') + ' ' + t('itemName'), type: 'warning' });
       return;
     }
 
@@ -136,11 +144,11 @@ export default function ItemPage() {
 
       setFormData({ name: '', description: '', quantity: 1, storageLocationId: formData.storageLocationId });
       setSelectedFiles([]);
-      alert(t('addedSuccessfully'));
+      setToast({ message: t('addedSuccessfully'), type: 'success' });
       fetchItems();
     } catch (error) {
       console.error('Error adding item:', error);
-      alert(t('failedToAdd'));
+      setToast({ message: t('failedToAdd'), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -156,15 +164,62 @@ export default function ItemPage() {
   };
 
   const handleDeleteItem = async (id) => {
-    if (window.confirm(t('confirmDelete'))) {
-      try {
-        await axios.delete(`${API_BASE_URL}/items/${id}`);
-        fetchItems();
-        alert(t('deletedSuccessfully'));
-      } catch (error) {
-        alert(t('failedToDelete'));
-      }
+    setConfirm({
+      title: t('confirmDelete'),
+      message: t('confirmDelete'),
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API_BASE_URL}/items/${id}`);
+          fetchItems();
+          setToast({ message: t('deletedSuccessfully'), type: 'success' });
+        } catch (error) {
+          setToast({ message: t('failedToDelete'), type: 'error' });
+        }
+        setConfirm(null);
+      },
+      onCancel: () => setConfirm(null)
+    });
+  };
+
+  const handleEditItem = (item) => {
+    setEditingId(item.id);
+    setEditFormData({
+      name: item.name,
+      description: item.description,
+      quantity: item.quantity,
+      storageLocationId: item.storageLocation?.id || '',
+    });
+  };
+
+  const handleUpdateItem = async (e) => {
+    e.preventDefault();
+    if (!editFormData.name || !editFormData.storageLocationId) {
+      setToast({ message: t('pleaseEnter') + ' ' + t('itemName'), type: 'warning' });
+      return;
     }
+
+    setLoading(true);
+    try {
+      await axios.put(`${API_BASE_URL}/items/${editingId}`, {
+        name: editFormData.name,
+        description: editFormData.description,
+        quantity: parseInt(editFormData.quantity),
+        storageLocation: { id: editFormData.storageLocationId },
+      });
+      setEditingId(null);
+      setToast({ message: t('updatedSuccessfully'), type: 'success' });
+      fetchItems();
+    } catch (error) {
+      console.error('Error updating item:', error);
+      setToast({ message: t('failedToUpdate'), type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditFormData({ name: '', description: '', quantity: 1, storageLocationId: '' });
   };
 
   const handlePhotoUpload = async (e, itemId) => {
@@ -181,32 +236,38 @@ export default function ItemPage() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      alert(t('uploadedSuccessfully'));
+      setToast({ message: t('uploadedSuccessfully'), type: 'success' });
       fetchItemPhotos(itemId);
     } catch (error) {
       console.error('Error uploading photo:', error);
-      alert(t('failedToUpload'));
+      setToast({ message: t('failedToUpload'), type: 'error' });
     } finally {
       setUploadingPhoto(false);
     }
   };
 
   const handleDeletePhoto = async (photoId, itemId) => {
-    if (window.confirm(t('confirmDelete'))) {
-      try {
-        await axios.delete(`${API_BASE_URL}/item-photos/${photoId}`);
-        alert(t('deletedSuccessfully'));
-        fetchItemPhotos(itemId);
-      } catch (error) {
-        alert(t('failedToDelete'));
-      }
-    }
+    setConfirm({
+      title: t('confirmDelete'),
+      message: t('confirmDelete'),
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API_BASE_URL}/item-photos/${photoId}`);
+          setToast({ message: t('deletedSuccessfully'), type: 'success' });
+          fetchItemPhotos(itemId);
+        } catch (error) {
+          setToast({ message: t('failedToDelete'), type: 'error' });
+        }
+        setConfirm(null);
+      },
+      onCancel: () => setConfirm(null)
+    });
   };
 
   const handleQuickAddLocation = async (e) => {
     e.preventDefault();
     if (!newLocationData.name) {
-      alert(t('pleaseEnter') + ' ' + t('locationName'));
+      setToast({ message: t('pleaseEnter') + ' ' + t('locationName'), type: 'warning' });
       return;
     }
 
@@ -226,10 +287,10 @@ export default function ItemPage() {
       // Close modal and reset form
       setIsModalOpen(false);
       setNewLocationData({ name: '', type: '' });
-      alert(t('addedSuccessfully'));
+      setToast({ message: t('addedSuccessfully'), type: 'success' });
     } catch (error) {
       console.error('Error adding location:', error);
-      alert(t('failedToAdd'));
+      setToast({ message: t('failedToAdd'), type: 'error' });
     } finally {
       setAddingLocation(false);
     }
@@ -266,156 +327,151 @@ export default function ItemPage() {
       )}
       <h1>{t('items')}</h1>
 
-      <form onSubmit={handleAddItem} className="item-form">
-        <div className="form-group">
-          <label>{t('itemName')} *</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            placeholder={t('itemName')}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>{t('description')}</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            placeholder={t('description')}
-            rows="3"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>{t('quantity')}</label>
-          <input
-            type="number"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleInputChange}
-            min="1"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>{t('storageLocations')} *</label>
-          <div className="select-with-button">
-            <select
-              name="storageLocationId"
-              value={formData.storageLocationId}
-              onChange={handleInputChange}
-            >
-              {storageLocations.map((location) => (
-                <option key={location.id} value={location.id}>
-                  {location.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              className="btn btn-secondary btn-add-location"
-            >
-              + {t('addLocation')}
-            </button>
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>{t('photos')} ({t('optional')})</label>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileSelect}
-            id="photo-input"
-            style={{ display: 'none' }}
-          />
-          <label htmlFor="photo-input" className="btn btn-secondary">
-            {t('selectFile')}
-          </label>
-          {selectedFiles.length > 0 && (
-            <div className="selected-files">
-              <p>{selectedFiles.length} {t('photos')} {t('selected')}</p>
-              <div className="file-list">
-                {selectedFiles.map((file, index) => (
-                  <div key={index} className="file-item">
-                    <span>{file.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeSelectedFile(index)}
-                      className="btn btn-danger btn-sm"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <button type="submit" disabled={loading} className="btn btn-primary">
-          {loading ? t('adding') : t('addItem')}
+      <div className="items-header">
+        <button onClick={() => setIsAddModalOpen(true)} className="btn btn-primary">
+          + {t('addItem')}
         </button>
-      </form>
 
-      <div className="items-list">
+        <div className="view-toggle">
+          <button
+            className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+            title={t('listView')}
+          >
+            ☰
+          </button>
+          <button
+            className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+            onClick={() => setViewMode('grid')}
+            title={t('gridView')}
+          >
+            ⊞
+          </button>
+        </div>
+      </div>
+
+      <div className={`items-list ${viewMode}-view`}>
         <h2>{t('itemsList')}</h2>
-        {items.map((item) => (
-          <div key={item.id} className="item-card">
-            <div className="item-info">
-              <h3>{item.name}</h3>
-              <p>{item.description}</p>
-              <p className="item-quantity">{t('quantity')}: {item.quantity}</p>
-
-              <div className="item-photos">
-                <h4>{t('photos')}</h4>
-                <div className="photos-grid">
-                  {itemPhotos[item.id] && itemPhotos[item.id].length > 0 ? (
-                    itemPhotos[item.id].map((photo) => (
-                      <div key={photo.id} className="photo-item">
-                        <img
-                          src={`${API_BASE_URL.replace('/api', '')}/uploads/${photo.photoPath}`}
-                          alt={item.name}
-                        />
-                        <button
-                          onClick={() => handleDeletePhoto(photo.id, item.id)}
-                          className="btn btn-danger btn-sm"
-                        >
-                          {t('delete')}
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="no-photos">{t('noPhotos')}</p>
-                  )}
-                </div>
-                <div className="photo-upload">
+        <div className={`items-container ${viewMode}-container`}>
+          {items.map((item) => (
+            <div key={item.id} className={`item-card ${viewMode}-item`}>
+            {editingId === item.id ? (
+              <form onSubmit={handleUpdateItem} style={{ flex: 1 }}>
+                <div className="form-group">
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handlePhotoUpload(e, item.id)}
-                    id={`photo-upload-${item.id}`}
-                    style={{ display: 'none' }}
+                    type="text"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    placeholder={t('itemName')}
                   />
-                  <label htmlFor={`photo-upload-${item.id}`} className="btn btn-secondary">
-                    {uploadingPhoto ? t('uploading') : t('uploadPhoto')}
-                  </label>
+                </div>
+                <div className="form-group">
+                  <textarea
+                    value={editFormData.description}
+                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                    placeholder={t('description')}
+                    rows="2"
+                  />
+                </div>
+                <div className="form-group">
+                  <input
+                    type="number"
+                    value={editFormData.quantity}
+                    onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
+                    min="1"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t('storageLocations')} *</label>
+                  <select
+                    value={editFormData.storageLocationId}
+                    onChange={(e) => setEditFormData({ ...editFormData, storageLocationId: e.target.value })}
+                  >
+                    {storageLocations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" disabled={loading} className="btn btn-primary">
+                    {t('save')}
+                  </button>
+                  <button type="button" onClick={handleCancelEdit} className="btn btn-secondary">
+                    {t('cancel')}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="item-content">
+                <div className="item-info">
+                  <h3>{item.name}</h3>
+                  <p className="item-description">{item.description}</p>
+                  <p className="item-quantity">{t('quantity')}: {item.quantity}</p>
+                  <p className="item-location">{item.storageLocation?.name}</p>
+                </div>
+
+                <div className="item-photos-section">
+                  {itemPhotos[item.id] && itemPhotos[item.id].length > 0 ? (
+                    <div className="photos-preview">
+                      {itemPhotos[item.id].slice(0, viewMode === 'grid' ? 1 : 3).map((photo) => (
+                        <div key={photo.id} className="photo-preview">
+                          <img
+                            src={`${API_BASE_URL.replace('/api', '')}/uploads/${photo.photoPath}`}
+                            alt={item.name}
+                          />
+                          <button
+                            onClick={() => handleDeletePhoto(photo.id, item.id)}
+                            className="btn btn-danger btn-xs photo-delete"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      {itemPhotos[item.id].length > (viewMode === 'grid' ? 1 : 3) && (
+                        <div className="more-photos">+{itemPhotos[item.id].length - (viewMode === 'grid' ? 1 : 3)}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="no-photos-placeholder">
+                      <span>{t('noPhotos')}</span>
+                    </div>
+                  )}
+
+                  <div className="photo-upload-section">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handlePhotoUpload(e, item.id)}
+                      id={`photo-upload-${item.id}`}
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor={`photo-upload-${item.id}`} className="btn btn-secondary btn-sm">
+                      {uploadingPhoto ? t('uploading') : '+'}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="item-actions">
+                  <button
+                    onClick={() => handleEditItem(item)}
+                    className="btn btn-primary btn-sm"
+                  >
+                    {t('edit')}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteItem(item.id)}
+                    className="btn btn-danger btn-sm"
+                  >
+                    {t('delete')}
+                  </button>
                 </div>
               </div>
-            </div>
-            <button
-              onClick={() => handleDeleteItem(item.id)}
-              className="btn btn-danger"
-            >
-              {t('delete')}
-            </button>
+            )}
           </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <Modal
@@ -425,6 +481,7 @@ export default function ItemPage() {
           setNewLocationData({ name: '', type: '' });
         }}
         title={t('addLocation')}
+        zIndex={1100}
       >
         <form onSubmit={handleQuickAddLocation}>
           <div className="form-group">
@@ -450,6 +507,138 @@ export default function ItemPage() {
 
           <button type="submit" disabled={addingLocation} className="btn btn-primary">
             {addingLocation ? t('adding') : t('add')}
+          </button>
+        </form>
+      </Modal>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {confirm && (
+        <Confirm
+          title={confirm.title}
+          message={confirm.message}
+          onConfirm={confirm.onConfirm}
+          onCancel={confirm.onCancel}
+          confirmText={t('delete')}
+          cancelText={t('cancel')}
+        />
+      )}
+
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setFormData({ name: '', description: '', quantity: 1, storageLocationId: formData.storageLocationId });
+          setSelectedFiles([]);
+        }}
+        title={t('addItem')}
+      >
+        <form onSubmit={(e) => {
+          handleAddItem(e);
+          setIsAddModalOpen(false);
+          setFormData({ name: '', description: '', quantity: 1, storageLocationId: formData.storageLocationId });
+          setSelectedFiles([]);
+        }} className="item-form">
+          <div className="form-group">
+            <label>{t('itemName')} *</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder={t('itemName')}
+              autoFocus
+            />
+          </div>
+
+          <div className="form-group">
+            <label>{t('description')}}</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder={t('description')}
+              rows="3"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>{t('quantity')}}</label>
+            <input
+              type="number"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleInputChange}
+              min="1"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>{t('storageLocations')} *</label>
+            <div className="select-with-button">
+              <select
+                name="storageLocationId"
+                value={formData.storageLocationId}
+                onChange={handleInputChange}
+              >
+                {storageLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="btn btn-secondary btn-add-location"
+              >
+                + {t('addLocationShort')}
+              </button>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>{t('photos')} ({t('optional')})</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileSelect}
+              id="photo-input"
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="photo-input" className="btn btn-secondary">
+              {t('selectFile')}
+            </label>
+            {selectedFiles.length > 0 && (
+              <div className="selected-files">
+                <p>{selectedFiles.length} {t('photos')} {t('selected')}</p>
+                <div className="file-list">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="file-item">
+                      <span>{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedFile(index)}
+                        className="btn btn-danger btn-sm"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button type="submit" disabled={loading} className="btn btn-primary">
+            {loading ? t('adding') : t('add')}
           </button>
         </form>
       </Modal>

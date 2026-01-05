@@ -49,6 +49,7 @@ public class ItemController {
                     item.setDescription(itemDetails.getDescription());
                     item.setQuantity(itemDetails.getQuantity());
                     item.setCategory(itemDetails.getCategory());
+                    item.setStorageLocation(itemDetails.getStorageLocation());
                     return ResponseEntity.ok(itemRepository.save(item));
                 })
                 .orElse(ResponseEntity.notFound().build());

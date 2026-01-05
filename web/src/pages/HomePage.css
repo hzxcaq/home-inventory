@@ -24,8 +24,8 @@
 .address-card {
   background: white;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(6, 182, 212, 0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   text-decoration: none;
   color: inherit;
@@ -35,8 +35,8 @@
 }
 
 .address-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 8px 24px rgba(6, 182, 212, 0.15);
 }
 
 .address-header h3 {
@@ -71,8 +71,8 @@
 .room-chip {
   display: inline-block;
   padding: 6px 12px;
-  background: #e3f2fd;
-  color: #1976d2;
+  background: #cffafe;
+  color: #0891b2;
   border-radius: 16px;
   font-size: 13px;
   text-decoration: none;
@@ -81,7 +81,7 @@
 }
 
 .room-chip:hover {
-  background: #1976d2;
+  background: #06b6d4;
   color: white;
   transform: translateY(-2px);
 }
@@ -100,17 +100,17 @@
 
 .room-chip.add-room-chip {
   background: #fff;
-  color: #1976d2;
-  border: 2px dashed #1976d2;
+  color: #06b6d4;
+  border: 2px dashed #06b6d4;
   font-size: 18px;
   font-weight: bold;
   padding: 4px 12px;
 }
 
 .room-chip.add-room-chip:hover {
-  background: #1976d2;
+  background: #06b6d4;
   color: white;
-  border-color: #1976d2;
+  border-color: #06b6d4;
   border-style: solid;
 }
 
@@ -127,8 +127,8 @@
 }
 
 .add-new-card {
-  border: 2px dashed #ddd;
-  background: #fafafa;
+  border: 2px dashed #cffafe;
+  background: #f0fafb;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -138,13 +138,13 @@
 }
 
 .add-new-card:hover {
-  border-color: #007bff;
-  background: #f0f8ff;
+  border-color: #06b6d4;
+  background: #ecf9fc;
 }
 
 .add-icon {
   font-size: 48px;
-  color: #007bff;
+  color: #06b6d4;
   margin-bottom: 10px;
 }
 
@@ -203,7 +203,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #007bff;
+  background: #06b6d4;
   color: white;
   border-radius: 50%;
   font-weight: bold;

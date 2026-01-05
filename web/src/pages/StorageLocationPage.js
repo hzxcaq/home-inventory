@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Breadcrumb from '../components/Breadcrumb';
+import Modal from '../components/Modal';
+import Toast from '../components/Toast';
+import Confirm from '../components/Confirm';
 import './StorageLocationPage.css';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -18,6 +21,12 @@ export default function StorageLocationPage() {
   const [batchData, setBatchData] = useState('');
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({ name: '', type: '', roomId: roomId });
+  const [toast, setToast] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
 
   useEffect(() => {
     fetchRoom();
@@ -66,7 +75,7 @@ export default function StorageLocationPage() {
   const handleAddLocation = async (e) => {
     e.preventDefault();
     if (!formData.name) {
-      alert(t('pleaseEnter') + ' ' + t('locationName'));
+      setToast({ message: t('pleaseEnter') + ' ' + t('locationName'), type: 'warning' });
       return;
     }
 
@@ -77,11 +86,11 @@ export default function StorageLocationPage() {
         room: { id: roomId },
       });
       setFormData({ name: '', type: '' });
-      alert(t('addedSuccessfully'));
+      setToast({ message: t('addedSuccessfully'), type: 'success' });
       fetchLocations();
     } catch (error) {
       console.error('Error adding location:', error);
-      alert(t('failedToAdd'));
+      setToast({ message: t('failedToAdd'), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -90,7 +99,7 @@ export default function StorageLocationPage() {
   const handleAddLocationsBatch = async (e) => {
     e.preventDefault();
     if (!batchData.trim()) {
-      alert(t('pleaseEnter') + ' ' + t('locationName'));
+      setToast({ message: t('pleaseEnter') + ' ' + t('locationName'), type: 'warning' });
       return;
     }
 
@@ -103,7 +112,7 @@ export default function StorageLocationPage() {
       .filter((loc) => loc.name.length > 0);
 
     if (locationList.length === 0) {
-      alert(t('pleaseEnter') + ' ' + t('locationName'));
+      setToast({ message: t('pleaseEnter') + ' ' + t('locationName'), type: 'warning' });
       return;
     }
 
@@ -116,26 +125,67 @@ export default function StorageLocationPage() {
       }));
       await axios.post(`${API_BASE_URL}/storage-locations/batch`, locationsToCreate);
       setBatchData('');
-      alert(`${locationList.length} ${t('storageLocations')} ${t('addedSuccessfully')}`);
+      setToast({ message: `${locationList.length} ${t('storageLocations')} ${t('addedSuccessfully')}`, type: 'success' });
       fetchLocations();
     } catch (error) {
       console.error('Error adding locations:', error);
-      alert(t('failedToAdd'));
+      setToast({ message: t('failedToAdd'), type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteLocation = async (id) => {
-    if (window.confirm(t('confirmDelete'))) {
-      try {
-        await axios.delete(`${API_BASE_URL}/storage-locations/${id}`);
-        fetchLocations();
-        alert(t('deletedSuccessfully'));
-      } catch (error) {
-        alert(t('failedToDelete'));
-      }
+    setConfirm({
+      title: t('confirmDelete'),
+      message: t('confirmDelete'),
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API_BASE_URL}/storage-locations/${id}`);
+          fetchLocations();
+          setToast({ message: t('deletedSuccessfully'), type: 'success' });
+        } catch (error) {
+          setToast({ message: t('failedToDelete'), type: 'error' });
+        }
+        setConfirm(null);
+      },
+      onCancel: () => setConfirm(null)
+    });
+  };
+
+  const handleEditLocation = (location) => {
+    setEditingId(location.id);
+    setEditFormData({ name: location.name, type: location.type, roomId: location.room?.id || roomId });
+  };
+
+  const handleUpdateLocation = async (e) => {
+    e.preventDefault();
+    if (!editFormData.name) {
+      setToast({ message: t('pleaseEnter') + ' ' + t('locationName'), type: 'warning' });
+      return;
     }
+
+    setLoading(true);
+    try {
+      await axios.put(`${API_BASE_URL}/storage-locations/${editingId}`, {
+        name: editFormData.name,
+        type: editFormData.type,
+        room: { id: editFormData.roomId },
+      });
+      setEditingId(null);
+      setToast({ message: t('updatedSuccessfully'), type: 'success' });
+      fetchLocations();
+    } catch (error) {
+      console.error('Error updating location:', error);
+      setToast({ message: t('failedToUpdate'), type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditFormData({ name: '', type: '', roomId: roomId });
   };
 
   return (
@@ -169,85 +219,211 @@ export default function StorageLocationPage() {
       )}
       <h1>{t('manageStorageLocations')}</h1>
 
-      <div className="mode-toggle">
-        <button
-          className={`toggle-btn ${!isBatchMode ? 'active' : ''}`}
-          onClick={() => setIsBatchMode(false)}
-        >
-          {t('singleMode')}
+      <div className="locations-header">
+        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+          + {t('addLocation')}
         </button>
-        <button
-          className={`toggle-btn ${isBatchMode ? 'active' : ''}`}
-          onClick={() => setIsBatchMode(true)}
-        >
-          {t('batchMode')}
-        </button>
+
+        <div className="view-toggle">
+          <button
+            className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+            title={t('listView')}
+          >
+            ☰
+          </button>
+          <button
+            className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+            onClick={() => setViewMode('grid')}
+            title={t('gridView')}
+          >
+            ⊞
+          </button>
+        </div>
       </div>
 
-      {!isBatchMode ? (
-        <form onSubmit={handleAddLocation} className="storage-form">
-          <div className="form-group">
-            <label>{t('locationName')} *</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder={t('locationName')}
-            />
-          </div>
+      <div className={`locations-list ${viewMode}-view`}>
+        <h2>{t('storageLocationsList')}</h2>
+        <div className={`locations-container ${viewMode}-container`}>
+          {locations.map((location) => (
+            <div key={location.id} className={`location-card ${viewMode}-item`}>
+            {editingId === location.id ? (
+              <form onSubmit={handleUpdateLocation} style={{ flex: 1 }}>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    placeholder={t('locationName')}
+                  />
+                </div>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    value={editFormData.type}
+                    onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                    placeholder={t('type')}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t('room')}</label>
+                  <select
+                    value={editFormData.roomId}
+                    onChange={(e) => setEditFormData({ ...editFormData, roomId: e.target.value })}
+                  >
+                    {allRooms.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" disabled={loading} className="btn btn-primary">
+                    {t('save')}
+                  </button>
+                  <button type="button" onClick={handleCancelEdit} className="btn btn-secondary">
+                    {t('cancel')}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="location-content">
+                <div className="location-info">
+                  <h3
+                    className="location-name-link"
+                    onClick={() => window.location.href = `/room/${roomId}/items`}
+                  >
+                    {location.name}
+                  </h3>
+                  {location.type && <p className="location-type">{location.type}</p>}
+                  <p className="location-room">{room?.name}</p>
+                </div>
 
-          <div className="form-group">
-            <label>{t('type')}</label>
-            <input
-              type="text"
-              name="type"
-              value={formData.type}
-              onChange={handleInputChange}
-              placeholder={t('type')}
-            />
+                <div className="location-actions">
+                  <a href={`/room/${roomId}/items`} className="btn btn-secondary btn-sm">
+                    {t('viewItems')}
+                  </a>
+                  <button
+                    onClick={() => handleEditLocation(location)}
+                    className="btn btn-primary btn-sm"
+                  >
+                    {t('edit')}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteLocation(location.id)}
+                    className="btn btn-danger btn-sm"
+                  >
+                    {t('delete')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+          ))}
+        </div>
+      </div>
 
-          <button type="submit" disabled={loading} className="btn btn-primary">
-            {loading ? t('adding') : t('addLocation')}
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={handleAddLocationsBatch} className="storage-form">
-          <div className="form-group">
-            <label>{t('locationName')} ({t('nameAndType')}) *</label>
-            <textarea
-              value={batchData}
-              onChange={(e) => setBatchData(e.target.value)}
-              placeholder={t('nameAndType')}
-              rows="6"
-            />
-            <small>{t('format')}: {t('nameAndType')}</small>
-          </div>
-
-          <button type="submit" disabled={loading} className="btn btn-primary">
-            {loading ? t('adding') : t('batchAdd')}
-          </button>
-        </form>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
 
-      <div className="locations-list">
-        <h2>{t('storageLocationsList')}</h2>
-        {locations.map((location) => (
-          <div key={location.id} className="location-item">
-            <div>
-              <h3>{location.name}</h3>
-              {location.type && <p className="location-type">{location.type}</p>}
+      {confirm && (
+        <Confirm
+          title={confirm.title}
+          message={confirm.message}
+          onConfirm={confirm.onConfirm}
+          onCancel={confirm.onCancel}
+          confirmText={t('delete')}
+          cancelText={t('cancel')}
+        />
+      )}
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsBatchMode(false);
+          setFormData({ name: '', type: '' });
+          setBatchData('');
+        }}
+        title={t('addLocation')}
+      >
+        <div className="mode-toggle">
+          <button
+            className={`toggle-btn ${!isBatchMode ? 'active' : ''}`}
+            onClick={() => setIsBatchMode(false)}
+          >
+            {t('singleMode')}
+          </button>
+          <button
+            className={`toggle-btn ${isBatchMode ? 'active' : ''}`}
+            onClick={() => setIsBatchMode(true)}
+          >
+            {t('batchMode')}
+          </button>
+        </div>
+
+        {!isBatchMode ? (
+          <form onSubmit={(e) => {
+            handleAddLocation(e);
+            setIsModalOpen(false);
+            setFormData({ name: '', type: '' });
+          }} className="storage-form">
+            <div className="form-group">
+              <label>{t('locationName')} *</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder={t('locationName')}
+                autoFocus
+              />
             </div>
-            <button
-              onClick={() => handleDeleteLocation(location.id)}
-              className="btn btn-danger"
-            >
-              {t('delete')}
+
+            <div className="form-group">
+              <label>{t('type')}}</label>
+              <input
+                type="text"
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+                placeholder={t('type')}
+              />
+            </div>
+
+            <button type="submit" disabled={loading} className="btn btn-primary">
+              {loading ? t('adding') : t('add')}
             </button>
-          </div>
-        ))}
-      </div>
+          </form>
+        ) : (
+          <form onSubmit={(e) => {
+            handleAddLocationsBatch(e);
+            setIsModalOpen(false);
+            setBatchData('');
+          }} className="storage-form">
+            <div className="form-group">
+              <label>{t('locationName')} ({t('nameAndType')}) *</label>
+              <textarea
+                value={batchData}
+                onChange={(e) => setBatchData(e.target.value)}
+                placeholder={t('nameAndType')}
+                rows="6"
+              />
+              <small>{t('format')}: {t('nameAndType')}</small>
+            </div>
+
+            <button type="submit" disabled={loading} className="btn btn-primary">
+              {loading ? t('adding') : t('batchAdd')}
+            </button>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -49,6 +49,7 @@ public class StorageLocationController {
                     location.setType(details.getType());
                     location.setPositionX(details.getPositionX());
                     location.setPositionY(details.getPositionY());
+                    location.setRoom(details.getRoom());
                     return ResponseEntity.ok(storageLocationRepository.save(location));
                 })
                 .orElse(ResponseEntity.notFound().build());

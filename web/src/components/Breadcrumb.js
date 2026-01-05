@@ -23,13 +23,21 @@ export default function Breadcrumb({ items }) {
           <span className="breadcrumb-separator">/</span>
           {item.dropdown ? (
             <div className="breadcrumb-dropdown">
-              <button
-                className={`breadcrumb-item dropdown-toggle ${!item.link ? 'active' : ''}`}
-                onClick={() => setOpenDropdown(openDropdown === index ? null : index)}
-              >
-                {item.label}
-                <span className="dropdown-arrow">▼</span>
-              </button>
+              <div className="breadcrumb-item-with-dropdown">
+                {item.link ? (
+                  <Link to={item.link} className="breadcrumb-item">
+                    {item.label}
+                  </Link>
+                ) : (
+                  <span className="breadcrumb-item active">{item.label}</span>
+                )}
+                <button
+                  className="dropdown-toggle-btn"
+                  onClick={() => setOpenDropdown(openDropdown === index ? null : index)}
+                >
+                  <span className="dropdown-arrow">▼</span>
+                </button>
+              </div>
               {openDropdown === index && (
                 <div className="dropdown-menu">
                   {item.dropdown.map((option) => (

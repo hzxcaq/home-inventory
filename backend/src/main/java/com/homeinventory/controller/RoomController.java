@@ -47,6 +47,7 @@ public class RoomController {
                 .map(room -> {
                     room.setName(roomDetails.getName());
                     room.setFloorPlanData(roomDetails.getFloorPlanData());
+                    room.setAddress(roomDetails.getAddress());
                     return ResponseEntity.ok(roomRepository.save(room));
                 })
                 .orElse(ResponseEntity.notFound().build());
