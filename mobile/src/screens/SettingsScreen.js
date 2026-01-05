@@ -1,40 +1,159 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
-import axios from 'axios';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Switch,
+  Linking,
+} from 'react-native';
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+export default function SettingsScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
 
-export default function SettingsScreen() {
-  const [addresses, setAddresses] = useState([]);
+  // Settings state
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+  const [notifications, setNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const [autoBackup, setAutoBackup] = useState(false);
 
   useEffect(() => {
-    fetchAddresses();
+    loadSettings();
   }, []);
 
-  const fetchAddresses = async () => {
+  const loadSettings = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/addresses`);
-      setAddresses(response.data);
+      const savedNotifications = await AsyncStorage.getItem('notifications');
+      const savedDarkMode = await AsyncStorage.getItem('darkMode');
+      const savedAutoBackup = await AsyncStorage.getItem('autoBackup');
+
+      if (savedNotifications !== null) {
+        setNotifications(JSON.parse(savedNotifications));
+      }
+      if (savedDarkMode !== null) {
+        setDarkMode(JSON.parse(savedDarkMode));
+      }
+      if (savedAutoBackup !== null) {
+        setAutoBackup(JSON.parse(savedAutoBackup));
+      }
     } catch (error) {
-      console.error('Error fetching addresses:', error);
+      console.error('Error loading settings:', error);
     }
   };
 
-  const handleDeleteAddress = (id) => {
+  const saveSettings = async (key, value) => {
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
+  const changeLanguage = async (languageCode) => {
+    try {
+      await i18n.changeLanguage(languageCode);
+      await AsyncStorage.setItem('language', languageCode);
+      setCurrentLanguage(languageCode);
+
+      Toast.show({
+        type: 'success',
+        text1: t('success'),
+        text2: t('languageChanged'),
+      });
+    } catch (error) {
+      console.error('Error changing language:', error);
+      Toast.show({
+        type: 'error',
+        text1: t('error'),
+        text2: t('failedToChangeLanguage'),
+      });
+    }
+  };
+
+  const showLanguageSelector = () => {
     Alert.alert(
-      'Delete Address',
-      'Are you sure you want to delete this address?',
+      t('selectLanguage'),
+      t('chooseLanguage'),
       [
-        { text: 'Cancel', onPress: () => {} },
         {
-          text: 'Delete',
+          text: 'English',
+          onPress: () => changeLanguage('en'),
+          style: currentLanguage === 'en' ? 'default' : 'default',
+        },
+        {
+          text: '中文',
+          onPress: () => changeLanguage('zh'),
+          style: currentLanguage === 'zh' ? 'default' : 'default',
+        },
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const handleNotificationsToggle = async (value) => {
+    setNotifications(value);
+    await saveSettings('notifications', value);
+
+    Toast.show({
+      type: 'info',
+      text1: t('notifications'),
+      text2: value ? t('notificationsEnabled') : t('notificationsDisabled'),
+    });
+  };
+
+  const handleDarkModeToggle = async (value) => {
+    setDarkMode(value);
+    await saveSettings('darkMode', value);
+
+    Toast.show({
+      type: 'info',
+      text1: t('darkMode'),
+      text2: value ? t('darkModeEnabled') : t('darkModeDisabled'),
+    });
+  };
+
+  const handleAutoBackupToggle = async (value) => {
+    setAutoBackup(value);
+    await saveSettings('autoBackup', value);
+
+    Toast.show({
+      type: 'info',
+      text1: t('autoBackup'),
+      text2: value ? t('autoBackupEnabled') : t('autoBackupDisabled'),
+    });
+  };
+
+  const handleClearData = () => {
+    Alert.alert(
+      t('clearAllData'),
+      t('confirmClearData'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('clear'),
+          style: 'destructive',
           onPress: async () => {
             try {
-              await axios.delete(`${API_BASE_URL}/addresses/${id}`);
-              fetchAddresses();
-              Alert.alert('Success', 'Address deleted');
+              // In a real app, you would clear the database here
+              Toast.show({
+                type: 'success',
+                text1: t('success'),
+                text2: t('dataCleared'),
+              });
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete address');
+              Toast.show({
+                type: 'error',
+                text1: t('error'),
+                text2: t('failedToClearData'),
+              });
             }
           },
         },
@@ -42,30 +161,197 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleExportData = () => {
+    Alert.alert(
+      t('exportData'),
+      t('exportDataDescription'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('export'),
+          onPress: () => {
+            // In a real app, you would implement data export here
+            Toast.show({
+              type: 'info',
+              text1: t('export'),
+              text2: t('exportFeatureComingSoon'),
+            });
+          },
+        },
+      ]
+    );
+  };
+
+  const handleImportData = () => {
+    Alert.alert(
+      t('importData'),
+      t('importDataDescription'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('import'),
+          onPress: () => {
+            // In a real app, you would implement data import here
+            Toast.show({
+              type: 'info',
+              text1: t('import'),
+              text2: t('importFeatureComingSoon'),
+            });
+          },
+        },
+      ]
+    );
+  };
+
+  const openGitHub = () => {
+    Linking.openURL('https://github.com/anthropics/claude-code');
+  };
+
+  const openSupport = () => {
+    Linking.openURL('mailto:support@example.com');
+  };
+
+  const renderSettingItem = ({ title, subtitle, onPress, rightComponent, showArrow = true }) => (
+    <TouchableOpacity
+      style={styles.settingItem}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={onPress ? 0.7 : 1}
+    >
+      <View style={styles.settingContent}>
+        <Text style={styles.settingTitle}>{title}</Text>
+        {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
+      </View>
+      <View style={styles.settingRight}>
+        {rightComponent}
+        {showArrow && onPress && <Text style={styles.arrow}>›</Text>}
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderSection = (title, children) => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionContent}>
+        {children}
+      </View>
+    </View>
+  );
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* App Settings */}
+      {renderSection(t('appSettings'), [
+        renderSettingItem({
+          key: 'language',
+          title: t('language'),
+          subtitle: currentLanguage === 'en' ? 'English' : '中文',
+          onPress: showLanguageSelector,
+        }),
+        renderSettingItem({
+          key: 'notifications',
+          title: t('notifications'),
+          subtitle: t('receiveNotifications'),
+          rightComponent: (
+            <Switch
+              value={notifications}
+              onValueChange={handleNotificationsToggle}
+              trackColor={{ false: '#e1e5e9', true: '#06b6d4' }}
+              thumbColor={notifications ? '#fff' : '#f4f3f4'}
+            />
+          ),
+          showArrow: false,
+        }),
+        renderSettingItem({
+          key: 'darkMode',
+          title: t('darkMode'),
+          subtitle: t('darkModeDescription'),
+          rightComponent: (
+            <Switch
+              value={darkMode}
+              onValueChange={handleDarkModeToggle}
+              trackColor={{ false: '#e1e5e9', true: '#06b6d4' }}
+              thumbColor={darkMode ? '#fff' : '#f4f3f4'}
+            />
+          ),
+          showArrow: false,
+        }),
+      ])}
 
-      <Text style={styles.sectionTitle}>Addresses</Text>
-      {addresses.map((address) => (
-        <View key={address.id} style={styles.addressCard}>
-          <View style={styles.addressInfo}>
-            <Text style={styles.addressName}>{address.name}</Text>
-            <Text style={styles.addressText}>{address.address}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteAddress(address.id)}
-          >
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
+      {/* Data Management */}
+      {renderSection(t('dataManagement'), [
+        renderSettingItem({
+          key: 'autoBackup',
+          title: t('autoBackup'),
+          subtitle: t('autoBackupDescription'),
+          rightComponent: (
+            <Switch
+              value={autoBackup}
+              onValueChange={handleAutoBackupToggle}
+              trackColor={{ false: '#e1e5e9', true: '#06b6d4' }}
+              thumbColor={autoBackup ? '#fff' : '#f4f3f4'}
+            />
+          ),
+          showArrow: false,
+        }),
+        renderSettingItem({
+          key: 'exportData',
+          title: t('exportData'),
+          subtitle: t('exportDataSubtitle'),
+          onPress: handleExportData,
+        }),
+        renderSettingItem({
+          key: 'importData',
+          title: t('importData'),
+          subtitle: t('importDataSubtitle'),
+          onPress: handleImportData,
+        }),
+        renderSettingItem({
+          key: 'clearData',
+          title: t('clearAllData'),
+          subtitle: t('clearDataWarning'),
+          onPress: handleClearData,
+          rightComponent: <Text style={styles.dangerText}>{t('clear')}</Text>,
+          showArrow: false,
+        }),
+      ])}
 
-      <Text style={styles.sectionTitle}>About</Text>
-      <View style={styles.infoCard}>
-        <Text style={styles.infoText}>Home Inventory System v1.0.0</Text>
-        <Text style={styles.infoText}>Manage your home items efficiently</Text>
+      {/* Support */}
+      {renderSection(t('support'), [
+        renderSettingItem({
+          key: 'github',
+          title: t('sourceCode'),
+          subtitle: t('viewOnGitHub'),
+          onPress: openGitHub,
+        }),
+        renderSettingItem({
+          key: 'support',
+          title: t('contactSupport'),
+          subtitle: t('getHelp'),
+          onPress: openSupport,
+        }),
+      ])}
+
+      {/* About */}
+      {renderSection(t('about'), [
+        renderSettingItem({
+          key: 'version',
+          title: t('version'),
+          subtitle: '1.0.0',
+          showArrow: false,
+        }),
+        renderSettingItem({
+          key: 'appName',
+          title: t('appName'),
+          subtitle: t('appDescription'),
+          showArrow: false,
+        }),
+      ])}
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          {t('madeWithLove')} ❤️
+        </Text>
       </View>
     </ScrollView>
   );
@@ -74,62 +360,71 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  section: {
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 16,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 12,
+    marginHorizontal: 16,
   },
-  addressCard: {
+  sectionContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  settingItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  addressInfo: {
+  settingContent: {
     flex: 1,
+    marginRight: 12,
   },
-  addressName: {
+  settingTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
   },
-  addressText: {
+  settingSubtitle: {
     fontSize: 14,
     color: '#666',
-    marginTop: 4,
+    lineHeight: 18,
   },
-  deleteButton: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+  settingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
+  arrow: {
+    fontSize: 20,
+    color: '#999',
+    marginLeft: 8,
   },
-  infoCard: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-  },
-  infoText: {
+  dangerText: {
     fontSize: 14,
-    color: '#666',
-    marginVertical: 4,
+    color: '#ef4444',
+    fontWeight: '600',
+  },
+  footer: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
 });

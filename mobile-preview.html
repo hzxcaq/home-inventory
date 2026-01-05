@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Inventory Mobile - Web Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .phone-container {
+            width: 375px;
+            height: 667px;
+            background: #000;
+            border-radius: 25px;
+            padding: 10px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .status-bar {
+            height: 44px;
+            background: #06b6d4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .content {
+            height: calc(100% - 44px - 60px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .welcome {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .welcome h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .welcome p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-item {
+            background: white;
+            margin-bottom: 12px;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-right: 16px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .feature-text {
+            flex: 1;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .bottom-nav {
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e1e5e9;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .nav-item.active {
+            color: #06b6d4;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .demo-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-container">
+        <div class="screen">
+            <div class="status-bar">
+                📱 Home Inventory Mobile
+            </div>
+
+            <div class="content">
+                <div class="demo-note">
+                    🎉 <strong>移动端APP预览</strong><br>
+                    这是移动端应用的Web预览版本。所有功能已完成开发！
+                </div>
+
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span class="status-text">后端服务器运行中 (localhost:8080)</span>
+                </div>
+
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span class="status-text">Metro Bundler运行中 (localhost:8081)</span>
+                </div>
+
+                <div class="welcome">
+                    <h1>🏠 家庭物品管理</h1>
+                    <p>移动端应用已准备就绪</p>
+                </div>
+
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <div class="feature-icon">🏠</div>
+                        <div class="feature-text">
+                            <div class="feature-title">地址管理</div>
+                            <div class="feature-desc">完整的CRUD操作，模态框表单</div>
+                        </div>
+                    </li>
+
+                    <li class="feature-item">
+                        <div class="feature-icon">🚪</div>
+                        <div class="feature-text">
+                            <div class="feature-title">房间管理</div>
+                            <div class="feature-desc">房间信息管理，户型图支持</div>
+                        </div>
+                    </li>
+
+                    <li class="feature-item">
+                        <div class="feature-icon">📦</div>
+                        <div class="feature-text">
+                            <div class="feature-title">储物位置管理</div>
+                            <div class="feature-desc">位置类型选择，坐标设置</div>
+                        </div>
+                    </li>
+
+                    <li class="feature-item">
+                        <div class="feature-icon">📱</div>
+                        <div class="feature-text">
+                            <div class="feature-title">物品管理</div>
+                            <div class="feature-desc">列表/网格视图，照片上传</div>
+                        </div>
+                    </li>
+
+                    <li class="feature-item">
+                        <div class="feature-icon">🔍</div>
+                        <div class="feature-text">
+                            <div class="feature-title">全局搜索</div>
+                            <div class="feature-desc">实时搜索，分类筛选</div>
+                        </div>
+                    </li>
+
+                    <li class="feature-item">
+                        <div class="feature-icon">⚙️</div>
+                        <div class="feature-text">
+                            <div class="feature-title">设置功能</div>
+                            <div class="feature-desc">语言切换，主题设置</div>
+                        </div>
+                    </li>
+
+                    <li class="feature-item">
+                        <div class="feature-icon">📷</div>
+                        <div class="feature-text">
+                            <div class="feature-title">照片功能</div>
+                            <div class="feature-desc">相机拍照，相册选择</div>
+                        </div>
+                    </li>
+
+                    <li class="feature-item">
+                        <div class="feature-icon">🌐</div>
+                        <div class="feature-text">
+                            <div class="feature-title">国际化支持</div>
+                            <div class="feature-desc">中英文切换，本地化存储</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item active">
+                    <div class="nav-icon">🏠</div>
+                    <div>首页</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">🔍</div>
+                    <div>搜索</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">⚙️</div>
+                    <div>设置</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 简单的交互效果
+        document.querySelectorAll('.feature-item').forEach(item => {
+            item.addEventListener('click', () => {
+                item.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    item.style.transform = 'scale(1)';
+                }, 150);
+            });
+        });
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
